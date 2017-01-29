@@ -10,6 +10,7 @@ GNU_PREFIX := arm-none-eabi
 CMSIS_DIR := $(DIR)/STM32Cube_FW_F1_V1.4.0/Drivers/CMSIS
 SYSTEM_DIR := $(CMSIS_DIR)/Device/ST/STM32F1xx
 RTOS_DIR := $(DIR)/STM32Cube_FW_F1_V1.4.0/Middlewares/Third_Party/FreeRTOS
+DRIVER_DIR := $(DIR)/kly_drivers
 OUTPUT_DIRECTORY := $(DIR)/out
 
 # =====================================================
@@ -27,6 +28,7 @@ TEMP_INC_PATHS := -I$(DIR)/Include \
 	-I$(RTOS_DIR)/Source/CMSIS_RTOS \
 	-I$(RTOS_DIR)/Source/include \
 	-I$(RTOS_DIR)/Source/portable/GCC/ARM_CM3 \
+	-I$(DRIVER_DIR)/Application_drivers/Include \
 
 
 
@@ -126,8 +128,8 @@ debug: ASMFLAGS += -g3 -O0
 debug: $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).bin $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).hex
 
 release: clean
-release: CFLAGS += -O3
-release: ASMFLAGS += -O3
+release: CFLAGS += -DNDEBUG -O3
+release: ASMFLAGS += -DNDEBUG -O3
 release: $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).bin $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).hex
 
 

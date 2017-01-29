@@ -15,6 +15,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "stm32f1xx.h"
+#include "kly_error.h"
 
 
 
@@ -94,13 +95,15 @@ void vApplicationMallocFailedHook(void)
 
 
 /**
- * Assertion fail handler.
- * @param file File
- * @param line
+ * Application error handler for asserts. Implemented by application.
+ * @param file File name
+ * @param line Line number
  */
-void main_application_assert_fail_handler(const char *file, uint32_t line)
+void kly_application_error_handler(const char *file, uint32_t line)
 {
+    static const __attribute__((used)) uint32_t error_const = 0x4b4c5945; //!< ASCII for KLYE
 
+    for( ;; );
 }
 
 
