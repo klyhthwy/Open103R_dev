@@ -1,0 +1,3 @@
+[submodule "kly_drivers"]
+	path = kly_drivers
+	url = git@github.com:klyhthwy/kly_drivers.git
