@@ -12,84 +12,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include "FreeRTOS.h"
-#include "task.h"
 #include "stm32f1xx.h"
 #include "kly_error.h"
 
 
 
-
-void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress )
-{
-    /* These are volatile to try and prevent the compiler/linker optimising them
-    away as the variables never actually get used.  If the debugger won't show the
-    values of the variables, make them global my moving their declaration outside
-    of this function. */
-    volatile uint32_t r0 __attribute__((unused));
-    volatile uint32_t r1 __attribute__((unused));
-    volatile uint32_t r2 __attribute__((unused));
-    volatile uint32_t r3 __attribute__((unused));
-    volatile uint32_t r12 __attribute__((unused));
-    volatile uint32_t lr __attribute__((unused)); /* Link register. */
-    volatile uint32_t pc __attribute__((unused)); /* Program counter. */
-    volatile uint32_t psr __attribute__((unused));/* Program status register. */
-
-    r0 = pulFaultStackAddress[ 0 ];
-    r1 = pulFaultStackAddress[ 1 ];
-    r2 = pulFaultStackAddress[ 2 ];
-    r3 = pulFaultStackAddress[ 3 ];
-
-    r12 = pulFaultStackAddress[ 4 ];
-    lr = pulFaultStackAddress[ 5 ];
-    pc = pulFaultStackAddress[ 6 ];
-    psr = pulFaultStackAddress[ 7 ];
-
-    /* When the following line is hit, the variables contain the register values. */
-    for( ;; );
-}
-
 void HardFault_Handler(void)
 {
-    __asm volatile
-    (
-        " tst lr, #4                                                \n"
-        " ite eq                                                    \n"
-        " mrseq r0, msp                                             \n"
-        " mrsne r0, psp                                             \n"
-        " ldr r1, [r0, #24]                                         \n"
-        " ldr r2, handler2_address_const                            \n"
-        " bx r2                                                     \n"
-        " handler2_address_const: .word prvGetRegistersFromStack    \n"
-    );
-}
-
-
-/**
- * Function For Handling Stack OVERFLOWS
- * @param xTask
- * @param pcTaskName
- */
-void __attribute__((optimize("03")))vApplicationStackOverflowHook(TaskHandle_t xTask,
-        signed char *pcTaskName)
-{
-    static const int taskname_buffer_size = 10;
-    static char taskname[10]__attribute__((unused));
-    static const __attribute__((used)) uint32_t error_const = 0x53544f56; //!< ASCII for STOV
-
-    strncpy(taskname, (char *)pcTaskName, taskname_buffer_size);
-
-    for( ;; );
-}
-
-/**
- * Function For Handling MALLOC Errors
- */
-void vApplicationMallocFailedHook(void)
-{
-    static const __attribute__((used)) uint32_t error_const = 0x4d414c4c; //!< ASCII for MALL
-
-    for( ;; );
 }
 
 
@@ -98,37 +27,12 @@ void vApplicationMallocFailedHook(void)
  * Application error handler for asserts. Implemented by application.
  * @param file File name
  * @param line Line number
+ * @param msg Error message
  */
-void kly_application_error_handler(const char *file, uint32_t line)
+void kly_application_error_handler(const char *file, uint32_t line, const char *msg)
 {
-    static const __attribute__((used)) uint32_t error_const = 0x4b4c5945; //!< ASCII for KLYE
 
     for( ;; );
-}
-
-
-
-/**
- * Test task
- * @param pvParameters
- */
-static void blink_task(void *pvParameters)
-{
-    TickType_t task_tick;
-    uint32_t config;
-
-    RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
-    config = GPIOC->CRH;
-    config &= ~(GPIO_CRH_CNF9_Msk | GPIO_CRH_MODE9_Msk);
-    config |= 3U << GPIO_CRH_MODE9_Pos;
-    GPIOC->CRH = config;
-
-    task_tick = xTaskGetTickCount();
-    for(;;)
-    {
-        GPIOC->ODR ^= GPIO_ODR_ODR9_Msk;
-        vTaskDelayUntil(&task_tick, 500 * portTICK_PERIOD_MS);
-    }
 }
 
 
@@ -147,14 +51,7 @@ int main(void)
 {
     init_clock();
 
-    xTaskCreate(blink_task, "BLINK", 500, NULL, tskIDLE_PRIORITY+4, NULL);
-
-    /* Start FreeRTOS scheduler. */
-    vTaskStartScheduler();
-
-    while(true)
+    for(;;)
     {
-        /* FreeRTOS should not be here... FreeRTOS goes back to the start of stack
-         * in vTaskStartScheduler function. */
     }
 }

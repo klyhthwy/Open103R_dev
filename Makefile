@@ -25,10 +25,7 @@ LINKER_SCRIPT := $(DIR)/STM32F103XC_FLASH.ld
 TEMP_INC_PATHS := -I$(DIR)/Include \
 	-I$(CMSIS_DIR)/Include \
 	-I$(SYSTEM_DIR)/Include \
-	-I$(RTOS_DIR)/Source/CMSIS_RTOS \
-	-I$(RTOS_DIR)/Source/include \
-	-I$(RTOS_DIR)/Source/portable/GCC/ARM_CM3 \
-	-I$(DRIVER_DIR)/Application_drivers/Include \
+	-I$(DRIVER_DIR)/Include \
 
 
 
@@ -38,12 +35,7 @@ TEMP_INC_PATHS := -I$(DIR)/Include \
 # =====================================================
 TEMP_SRC_FILES := $(SYSTEM_DIR)/Source/Templates/system_stm32f1xx.c \
 	$(DIR)/Source/main.c \
-	$(RTOS_DIR)/Source/portable/GCC/ARM_CM3/port.c \
-	$(RTOS_DIR)/Source/portable/MemMang/heap_1.c \
-	$(RTOS_DIR)/Source/CMSIS_RTOS/cmsis_os.c \
-	$(RTOS_DIR)/Source/tasks.c \
-	$(RTOS_DIR)/Source/queue.c \
-	$(RTOS_DIR)/Source/list.c \
+	$(DRIVER_DIR)/Target_drivers/kly_stm32_gpio.c \
 
 
 
