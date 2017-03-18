@@ -14,10 +14,12 @@
 #include <string.h>
 #include "FreeRTOS.h"
 #include "task.h"
-#include "stm32f1xx.h"
 #include "kly_error.h"
+#include "kly_gpio.h"
 
-
+#define LED_PORT    2
+#define LED_POS     9
+#define LED_MASK    (0xF << LED_POS)
 
 
 void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress )
@@ -116,18 +118,16 @@ void kly_application_error_handler(const char *file, uint32_t line, const char *
 static void blink_task(void *pvParameters)
 {
     TickType_t task_tick;
-    uint32_t config;
+    uint32_t a;
 
-    RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
-    config = GPIOC->CRH;
-    config &= ~(GPIO_CRH_CNF9_Msk | GPIO_CRH_MODE9_Msk);
-    config |= 3U << GPIO_CRH_MODE9_Pos;
-    GPIOC->CRH = config;
+    kly_gpio_port_config(LED_PORT, LED_MASK, KLY_GPIO_CONFIG_OUTPUT_PUSH_PULL, KLY_GPIO_PULL_NONE);
 
     task_tick = xTaskGetTickCount();
+    a = 0;
     for(;;)
     {
-        GPIOC->ODR ^= GPIO_ODR_ODR9_Msk;
+        kly_gpio_port_write(LED_PORT, LED_MASK, a << LED_POS);
+
         vTaskDelayUntil(&task_tick, 500 * portTICK_PERIOD_MS);
     }
 }
