@@ -31,7 +31,6 @@ void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress )
     volatile uint32_t r2 __attribute__((unused));
     volatile uint32_t r3 __attribute__((unused));
     volatile uint32_t r12 __attribute__((unused));
- * @param msg Error message
     volatile uint32_t lr __attribute__((unused)); /* Link register. */
     volatile uint32_t pc __attribute__((unused)); /* Program counter. */
     volatile uint32_t psr __attribute__((unused));/* Program status register. */
@@ -99,6 +98,7 @@ void vApplicationMallocFailedHook(void)
  * Application error handler for asserts. Implemented by application.
  * @param file File name
  * @param line Line number
+ * @param msg Error message
  */
 void kly_application_error_handler(const char *file, uint32_t line, const char *msg)
 {
