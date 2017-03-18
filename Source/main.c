@@ -31,6 +31,7 @@ void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress )
     volatile uint32_t r2 __attribute__((unused));
     volatile uint32_t r3 __attribute__((unused));
     volatile uint32_t r12 __attribute__((unused));
+ * @param msg Error message
     volatile uint32_t lr __attribute__((unused)); /* Link register. */
     volatile uint32_t pc __attribute__((unused)); /* Program counter. */
     volatile uint32_t psr __attribute__((unused));/* Program status register. */
@@ -99,7 +100,7 @@ void vApplicationMallocFailedHook(void)
  * @param file File name
  * @param line Line number
  */
-void kly_application_error_handler(const char *file, uint32_t line)
+void kly_application_error_handler(const char *file, uint32_t line, const char *msg)
 {
     static const __attribute__((used)) uint32_t error_const = 0x4b4c5945; //!< ASCII for KLYE
 
