@@ -118,6 +118,7 @@ static void blink_task(void *pvParameters)
     TickType_t task_tick;
     uint32_t a;
 
+    kly_gpio_port_initialize(LED_PORT);
     kly_gpio_port_config(LED_PORT, LED_MASK, KLY_GPIO_CONFIG_OUTPUT_PUSH_PULL, KLY_GPIO_PULL_NONE);
 
     task_tick = xTaskGetTickCount();
@@ -184,7 +185,7 @@ int main(void)
 {
     init_clock();
 
-    xTaskCreate(blink_task, "BLINK", 500, NULL, tskIDLE_PRIORITY+4, NULL);
+    xTaskCreate(blink_task, "BLINK", 500, NULL, tskIDLE_PRIORITY+1, NULL);
 
     /* Start FreeRTOS scheduler. */
     vTaskStartScheduler();
