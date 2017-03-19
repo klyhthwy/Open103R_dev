@@ -46,6 +46,7 @@ TEMP_SRC_FILES := $(SYSTEM_DIR)/Source/Templates/system_stm32f1xx.c \
 	$(RTOS_DIR)/Source/queue.c \
 	$(RTOS_DIR)/Source/list.c \
 	$(DRIVER_DIR)/Target_drivers/kly_stm32_gpio.c \
+	$(DRIVER_DIR)/Target_drivers/kly_stm32_static_mutex.c \
 
 
 
