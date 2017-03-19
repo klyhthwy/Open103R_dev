@@ -28,7 +28,7 @@ TEMP_INC_PATHS := -I$(DIR)/Include \
 	-I$(RTOS_DIR)/Source/CMSIS_RTOS \
 	-I$(RTOS_DIR)/Source/include \
 	-I$(RTOS_DIR)/Source/portable/GCC/ARM_CM3 \
-	-I$(DRIVER_DIR)/Application_drivers/Include \
+	-I$(DRIVER_DIR)/Include \
 
 
 
@@ -38,12 +38,14 @@ TEMP_INC_PATHS := -I$(DIR)/Include \
 # =====================================================
 TEMP_SRC_FILES := $(SYSTEM_DIR)/Source/Templates/system_stm32f1xx.c \
 	$(DIR)/Source/main.c \
+	$(DIR)/Source/FreeRTOS_openocd.c \
 	$(RTOS_DIR)/Source/portable/GCC/ARM_CM3/port.c \
 	$(RTOS_DIR)/Source/portable/MemMang/heap_1.c \
 	$(RTOS_DIR)/Source/CMSIS_RTOS/cmsis_os.c \
 	$(RTOS_DIR)/Source/tasks.c \
 	$(RTOS_DIR)/Source/queue.c \
 	$(RTOS_DIR)/Source/list.c \
+	$(DRIVER_DIR)/Target_drivers/kly_stm32_gpio.c \
 
 
 
@@ -79,7 +81,7 @@ LDFLAGS := $(ARCHFLAG)
 LDFLAGS += -T$(LINKER_SCRIPT)
 LDFLAGS += -Xlinker -Map=$(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).map
 # let linker to dump unused sections
-LDFLAGS += -Wl,--gc-sections
+LDFLAGS += -Wl,--gc-sections -Wl,--undefined=uxTopUsedPriority
 LDFLAGS += --specs=nano.specs
 
 # Compiler flags
@@ -122,12 +124,10 @@ STM_CFG := $(OPENOCD_DIR)/scripts/target/stm32f1x.cfg
 
 
 #Targets
-debug: clean
 debug: CFLAGS += -g3 -O0
 debug: ASMFLAGS += -g3 -O0
 debug: $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).bin $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).hex
 
-release: clean
 release: CFLAGS += -DNDEBUG -O3
 release: ASMFLAGS += -DNDEBUG -O3
 release: $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).bin $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).hex

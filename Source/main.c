@@ -14,15 +14,18 @@
 #include <string.h>
 #include "FreeRTOS.h"
 #include "task.h"
+#include "stm32f1xx.h"
 #include "kly_error.h"
 #include "kly_gpio.h"
+
 
 #define LED_PORT    2
 #define LED_POS     9
 #define LED_MASK    (0xF << LED_POS)
 
 
-void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress )
+
+void __attribute__((optimize("00"))) prvGetRegistersFromStack( uint32_t *pulFaultStackAddress )
 {
     /* These are volatile to try and prevent the compiler/linker optimising them
     away as the variables never actually get used.  If the debugger won't show the
@@ -48,7 +51,7 @@ void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress )
     psr = pulFaultStackAddress[ 7 ];
 
     /* When the following line is hit, the variables contain the register values. */
-    for( ;; );
+    KLY_FAIL("HARD_FAULT");
 }
 
 void HardFault_Handler(void)
@@ -72,16 +75,14 @@ void HardFault_Handler(void)
  * @param xTask
  * @param pcTaskName
  */
-void __attribute__((optimize("03")))vApplicationStackOverflowHook(TaskHandle_t xTask,
-        signed char *pcTaskName)
+void vApplicationStackOverflowHook(TaskHandle_t xTask, signed char *pcTaskName)
 {
-    static const int taskname_buffer_size = 10;
-    static char taskname[10]__attribute__((unused));
-    static const __attribute__((used)) uint32_t error_const = 0x53544f56; //!< ASCII for STOV
+    static const char err_msg[] = "STACK_OVERFLOW in Task: ";
+    static char stack_overflow_msg[sizeof(err_msg) + configMAX_TASK_NAME_LEN];
 
-    strncpy(taskname, (char *)pcTaskName, taskname_buffer_size);
-
-    for( ;; );
+    strcpy(stack_overflow_msg, err_msg);
+    strncpy(&stack_overflow_msg[sizeof(err_msg)], (char *)pcTaskName, configMAX_TASK_NAME_LEN);
+    KLY_FAIL(stack_overflow_msg);
 }
 
 /**
@@ -89,9 +90,7 @@ void __attribute__((optimize("03")))vApplicationStackOverflowHook(TaskHandle_t x
  */
 void vApplicationMallocFailedHook(void)
 {
-    static const __attribute__((used)) uint32_t error_const = 0x4d414c4c; //!< ASCII for MALL
-
-    for( ;; );
+    KLY_FAIL("MALLOC_FAILED");
 }
 
 
@@ -102,9 +101,8 @@ void vApplicationMallocFailedHook(void)
  * @param line Line number
  * @param msg Error message
  */
-void kly_application_error_handler(const char *file, uint32_t line, const char *msg)
+void __attribute__((optimize("00"))) kly_application_error_handler(const char *file, uint32_t line, const char *msg)
 {
-    static const __attribute__((used)) uint32_t error_const = 0x4b4c5945; //!< ASCII for KLYE
 
     for( ;; );
 }
@@ -127,8 +125,10 @@ static void blink_task(void *pvParameters)
     for(;;)
     {
         kly_gpio_port_write(LED_PORT, LED_MASK, a << LED_POS);
+        a++;
+        a %= 0x10;
 
-        vTaskDelayUntil(&task_tick, 500 * portTICK_PERIOD_MS);
+        vTaskDelayUntil(&task_tick, 500 / portTICK_PERIOD_MS);
     }
 }
 
@@ -139,11 +139,47 @@ static void blink_task(void *pvParameters)
  */
 static void init_clock(void)
 {
+    register uint32_t config;
 
+    /// Enable the HSE and wait for it to stabilize.
+    RCC->CR |= RCC_CR_HSEON;
+    while((RCC->CR & RCC_CR_HSERDY_Msk) == 0);
+
+    /// Configure the PLL. The PLL must be configured in the CFGR register before
+    /// turning it on in the CR.
+    config = RCC->CFGR;
+    config &= ~(RCC_CFGR_PLLMULL_Msk | RCC_CFGR_PLLXTPRE_Msk | RCC_CFGR_PLLSRC_Msk);
+    config |= RCC_CFGR_PLLMULL9 | RCC_CFGR_PLLXTPRE_HSE | RCC_CFGR_PLLSRC;
+    RCC->CFGR = config;
+
+    RCC->CR |= RCC_CR_PLLON;
+    while((RCC->CR & RCC_CR_PLLRDY_Msk) == 0);
+
+    /// Update the flash wait states for highest frequency clock.
+    config = FLASH->ACR;
+    config &= ~FLASH_ACR_LATENCY_Msk;
+    config |= FLASH_ACR_LATENCY_2;
+    FLASH->ACR = config;
+
+    /// Switch to the PLL as system clock.
+    config = RCC->CFGR;
+    config &= ~(RCC_CFGR_SW_Msk);
+    config |= RCC_CFGR_SW_PLL;
+    RCC->CFGR = config;
+    while((RCC->CFGR & RCC_CFGR_SWS_Msk) != RCC_CFGR_SWS_PLL);
+
+    /// Disable the HSI.
+    RCC->CR &= ~RCC_CR_HSION;
+
+    SystemCoreClockUpdate();
 }
 
 
 
+/**
+ * Application main.
+ * @return
+ */
 int main(void)
 {
     init_clock();
