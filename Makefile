@@ -90,8 +90,8 @@ CFLAGS := $(ARCHFLAG) -D$(DEVICE) --std=gnu99 -Wall -Werror
 ASMFLAGS := $(ARCHFLAG) -x assembler-with-cpp
 
 #INFO files
-SIZE_FILE := Final_Size.txt
-NM_FILE := Object_Info.txt
+SIZE_FILE := $(OUTPUT_DIRECTORY)/Final_Size.txt
+NM_FILE := $(OUTPUT_DIRECTORY)/Object_Info.txt
 
 # Sorting removes duplicates
 BUILD_DIRECTORIES := $(sort $(OUTPUT_DIRECTORY))
@@ -117,11 +117,11 @@ vpath %.s $(ASSEMBLER_SOURCE_PATHS)
 -include $(addprefix $(OUTPUT_DIRECTORY)/, $(COBJS:.o=.d))
 
 
-# Stuff for programming.
-OPENOCD_DIR := "/Applications/GNU ARM Eclipse/OpenOCD/0.9.0-201505191004"
-OPENOCD := $(OPENOCD_DIR)/bin/openocd
-STLINK_CFG := $(OPENOCD_DIR)/scripts/interface/stlink-v2.cfg
-STM_CFG := $(OPENOCD_DIR)/scripts/target/stm32f1x.cfg
+#JLINK Variables
+JLINK_OPTS = -device STM32F103RC -if JTAG -speed 4000 -JTAGConf -1,-1
+JLINK_GDB_OPTS = -noir
+JLINK = JLinkExe $(JLINK_OPTS)
+JLINKD_GDB = JLinkGDBServer $(JLINK_GDB_OPTS)
 
 
 #Targets
@@ -134,7 +134,7 @@ release: ASMFLAGS += -DNDEBUG -O3
 release: $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).bin $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).hex
 
 
-.PHONY: clean flash
+.PHONY: clean erase reset flash
 
 echostuff:
 	@echo C_OBJECTS: [$(C_OBJECTS)]
@@ -158,21 +158,47 @@ $(OUTPUT_DIRECTORY)/%.o: %.s
 
 ## Link C and assembler objects to an .out file
 $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).out: $(BUILD_DIRECTORIES) $(C_OBJECTS) $(ASSEMBLER_OBJECTS)
-	$(CC) $(LDFLAGS) $(C_OBJECTS) $(ASSEMBLER_OBJECTS) -o $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).out
-	$(NM) -S -t d $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).out > $(NM_FILE)
-	$(SIZE) $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).out > $(SIZE_FILE)
+	$(CC) $(LDFLAGS) $(C_OBJECTS) $(ASSEMBLER_OBJECTS) -o $@
 
 ## Create binary .bin file from the .out file
 $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).bin: $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).out
-	$(OBJCOPY) -O binary $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).out $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).bin
+	$(OBJCOPY) -O binary $< $@
 
 ## Create binary .hex file from the .out file
 $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).hex: $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).out
-	$(OBJCOPY) -O ihex $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).out $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).hex
-	$(SIZE) $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).out
+	$(OBJCOPY) -O ihex $< $@
+	$(SIZE) $<
+
+$(NM_FILE): $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).out
+	$(NM) -S -t d $< > $@
+	
+$(SIZE_FILE): $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).out
+	$(SIZE) $< > $@
 
 clean:
-	$(RM) $(OUTPUT_DIRECTORY) $(NM_FILE) $(SIZE_FILE)
+	$(RM) $(OUTPUT_DIRECTORY)
 
-flash: $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).out
-	$(OPENOCD) -f $(STLINK_CFG) -f $(STM_CFG) -c "program $< verify reset exit"
+flash: flash.jlink
+	make -C $(DIR) erase
+	$(JLINK) $<
+	$(RM) $<
+	make -C $(DIR) reset
+
+erase: flash-erase.jlink
+	$(JLINK) $<
+	$(RM) $<
+
+reset: flash-reset.jlink
+	sleep 1
+	$(JLINK) $<
+	$(RM) $<
+
+flash-erase.jlink:
+	printf "erase\nexit\n" > $@
+
+flash-reset.jlink:
+	printf "rx 100\ngo\nexit\n" > $@
+
+flash.jlink: $(OUTPUT_DIRECTORY)/$(OUTPUT_FILENAME).hex
+	printf "loadfile $<\nexit\n" > $@
+	
