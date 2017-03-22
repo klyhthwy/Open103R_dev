@@ -138,13 +138,38 @@ static void blink_task(void *pvParameters)
 
 static void lcd_task(void *pvParameters)
 {
+    static const uint16_t COLOR[8] =
+    {
+        White,
+        Grey,
+        Blue,
+        Red,
+        Magenta,
+        Green,
+        Cyan,
+        Yellow,
+    };
+
+    TickType_t task_tick;
+    uint16_t y;
+    uint8_t color;
+
     LCD_Initializtion();
     LCD_Clear(Black);
-    GUI_Text(0, 0, (uint8_t *)"Hello World!", White, Black);
 
+    task_tick = xTaskGetTickCount();
+    y = 0;
     for(;;)
     {
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        GUI_Text(80, y++, (uint8_t *)"Hello World!", COLOR[color], Black);
+        if(y >= MAX_Y)
+        {
+            y = 0;
+            color++;
+            color %= 8;
+        }
+
+        vTaskDelayUntil(&task_tick, 50 / portTICK_PERIOD_MS);
     }
 }
 
