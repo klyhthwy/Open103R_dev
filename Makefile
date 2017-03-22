@@ -23,6 +23,7 @@ LINKER_SCRIPT := $(DIR)/STM32F103XC_FLASH.ld
 # =================== Include paths ===================
 # =====================================================
 TEMP_INC_PATHS := -I$(DIR)/Include \
+	-I$(DIR)/Source/LCD \
 	-I$(CMSIS_DIR)/Include \
 	-I$(SYSTEM_DIR)/Include \
 	-I$(RTOS_DIR)/Source/CMSIS_RTOS \
@@ -39,12 +40,15 @@ TEMP_INC_PATHS := -I$(DIR)/Include \
 TEMP_SRC_FILES := $(SYSTEM_DIR)/Source/Templates/system_stm32f1xx.c \
 	$(DIR)/Source/main.c \
 	$(DIR)/Source/FreeRTOS_openocd.c \
+	$(DIR)/Source/LCD/AsciiLib.c \
+	$(DIR)/Source/LCD/LCD.c \
 	$(RTOS_DIR)/Source/portable/GCC/ARM_CM3/port.c \
 	$(RTOS_DIR)/Source/portable/MemMang/heap_1.c \
 	$(RTOS_DIR)/Source/CMSIS_RTOS/cmsis_os.c \
 	$(RTOS_DIR)/Source/tasks.c \
 	$(RTOS_DIR)/Source/queue.c \
 	$(RTOS_DIR)/Source/list.c \
+	$(DRIVER_DIR)/FreeRTOS_drivers/kly_FreeRTOS_delay.c \
 	$(DRIVER_DIR)/Target_drivers/kly_stm32_gpio.c \
 	$(DRIVER_DIR)/Target_drivers/kly_stm32_static_mutex.c \
 
@@ -118,7 +122,7 @@ vpath %.s $(ASSEMBLER_SOURCE_PATHS)
 
 
 #JLINK Variables
-JLINK_OPTS = -device STM32F103RC -if JTAG -speed 4000 -JTAGConf -1,-1
+JLINK_OPTS = -device STM32F103RC -if SWD -speed 4000
 JLINK_GDB_OPTS = -noir
 JLINK = JLinkExe $(JLINK_OPTS)
 JLINKD_GDB = JLinkGDBServer $(JLINK_GDB_OPTS)

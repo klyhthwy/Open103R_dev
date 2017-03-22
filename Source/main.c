@@ -17,6 +17,7 @@
 #include "stm32f1xx.h"
 #include "kly_error.h"
 #include "kly_gpio.h"
+#include "LCD.h"
 
 
 #define LED_PORT    2
@@ -129,7 +130,21 @@ static void blink_task(void *pvParameters)
         a++;
         a %= 0x10;
 
-        vTaskDelayUntil(&task_tick, 500 / portTICK_PERIOD_MS);
+        vTaskDelayUntil(&task_tick, 1000 / portTICK_PERIOD_MS);
+    }
+}
+
+
+
+static void lcd_task(void *pvParameters)
+{
+    LCD_Initializtion();
+    LCD_Clear(Black);
+    GUI_Text(0, 0, (uint8_t *)"Hello World!", White, Black);
+
+    for(;;)
+    {
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
 
@@ -185,7 +200,8 @@ int main(void)
 {
     init_clock();
 
-    xTaskCreate(blink_task, "BLINK", 500, NULL, tskIDLE_PRIORITY+1, NULL);
+    KLY_ASSERT(pdPASS == xTaskCreate(blink_task, "BLINK", 500, NULL, tskIDLE_PRIORITY+1, NULL));
+    KLY_ASSERT(pdPASS == xTaskCreate(lcd_task, "LCD", 500, NULL, tskIDLE_PRIORITY+2, NULL));
 
     /* Start FreeRTOS scheduler. */
     vTaskStartScheduler();
